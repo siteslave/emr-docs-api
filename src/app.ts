@@ -85,11 +85,11 @@ let authDoctor = (req, res, next) => {
     });
 }
 
-app.use('/kemr/login', loginRouter);
-// app.use('/kemr', index);
-app.use('/kemr/users', authUploader, userRouter);
-app.use('/kemr/doctors', authDoctor, doctorRouter);
-app.use('/kemr/hdc', authDoctor, hdcRouter);
+app.use('/emr-docs/login', loginRouter);
+// app.use('/emr-docs', index);
+app.use('/emr-docs/users', authUploader, userRouter);
+app.use('/emr-docs/doctors', authDoctor, doctorRouter);
+app.use('/emr-docs/hdc', authDoctor, hdcRouter);
 
 //catch 404 and forward to error handler
 app.use((req, res, next) => {
