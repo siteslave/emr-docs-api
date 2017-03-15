@@ -44,13 +44,15 @@ router.post('/uploads', upload.any(), (req, res, next) => {
   files.forEach(v => {
     let fileData = fs.readFileSync(v.path);
     // let buffer = new Buffer(fileData);
+    let uploaded_at = moment().format('x');
     let obj = {
       vn: vn,
       hn: hn,
       data: fileData,
       mimetype: v.mimetype,
       type: imageType,
-      filename: v.originalname
+      filename: v.originalname,
+      uploaded_at: uploaded_at
     };
     docs.push(obj);
     rimraf.sync(v.path);
