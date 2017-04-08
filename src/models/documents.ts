@@ -10,7 +10,6 @@ export class DocumentModel {
         .run(connection, (err, results) => {
           if (err) reject(err);
           else resolve(results);
-          connection.close();
         });
     });
   }
@@ -23,7 +22,6 @@ export class DocumentModel {
         .run(connection, (err, results) => {
           if (err) reject(err);
           else resolve(results);
-          connection.close();
         });
     });
   }
@@ -32,11 +30,10 @@ export class DocumentModel {
     return new Promise((resolve, reject) => {
       r.db('kemr').table('documents')
         .filter(r.row('vn').eq(vn))
-        .pluck('id', 'mimetype', 'type', 'filename')
+        .pluck('id', 'mimetype', 'type', 'filename', 'uploaded_at')
         .run(connection, (err, results) => {
           if (err) reject(err);
           else resolve(results);
-          connection.close();
         });
     });
   }
@@ -49,7 +46,6 @@ export class DocumentModel {
         .run(connection, (err) => {
           if (err) reject(err);
           else resolve();
-          connection.close();
         });
     });
   }
