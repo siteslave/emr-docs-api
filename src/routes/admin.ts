@@ -24,5 +24,4 @@ router.route('/activities')
   .put()
   .delete();
 
-
 export default router;

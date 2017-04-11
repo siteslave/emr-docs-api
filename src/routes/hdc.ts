@@ -34,7 +34,6 @@ router.get('/search/:hn', (req, res, next) => {
           })
           .then((results: any) => {
             // console.log(results);
-            conn.release();
             let uniqDate = _.uniqBy(results, "ym");
             let vstdate: any = [];
             let visits = [];
@@ -48,10 +47,11 @@ router.get('/search/:hn', (req, res, next) => {
               }
               vstdate.push(vdate);
             });
-
+            conn.destroy();            
             res.send({ ok: true, rows: vstdate });
           })
           .catch(error => {
+            conn.destroy();
             console.log(error);
             res.send({
               ok: false,
@@ -113,10 +113,15 @@ router.get('/visit-detail/:hospcode/:pid/:seq', (req, res, next) => {
             return hdcModel.getServiceDrug(conn, hospcode, pid, seq);
           })
           .then((results: any) => {
+            conn.destroy();
             drug = results;
-            conn.release();
             res.send({ ok: true, service: service, diag: diag, proced: proced, drug: drug });
           })
+          .catch((error) => {
+            conn.destroy();
+            console.log(error);
+            res.send({ ok: false, error: error });
+        })
       })
       .catch(error => {
         console.log(error);

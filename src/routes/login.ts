@@ -3,7 +3,7 @@
 import * as express from 'express';
 import * as crypto from 'crypto';
 import * as r from "rethinkdb";
-import { Cursor } from 'rethinkdb';
+import { Cursor, Connection as RethinkConnection } from 'rethinkdb';
 
 import { IConnection } from 'mysql';
 import { Jwt } from '../models/jwt';
@@ -22,7 +22,7 @@ router.post('/', (req, res, next) => {
     let encPassword = crypto.createHash('md5').update(password).digest('hex');
 
     connection.getRethinkConnection()
-      .then((conn: any) => {
+      .then((conn: RethinkConnection) => {
         loginModel.doLogin(conn, username, encPassword)
           .then((cursor: Cursor) => {
             cursor.toArray((err, rows) => {
@@ -39,9 +39,11 @@ router.post('/', (req, res, next) => {
                 }
               }
             });
+            conn.close();
             // res.send({ok: true, rows: results})
           })
           .catch(err => {
+            conn.close();
             console.log(err);
             res.send({
               ok: false, error: {

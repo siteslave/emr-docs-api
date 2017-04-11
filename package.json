@@ -32,7 +32,7 @@
     "@types/morgan": "^1.7.32",
     "@types/mysql": "0.0.31",
     "@types/node": "^6.0.45",
-    "@types/rethinkdb": "^2.3.1",
+    "@types/rethinkdb": "^2.3.2",
     "@types/serve-favicon": "^2.2.27"
   }
 }

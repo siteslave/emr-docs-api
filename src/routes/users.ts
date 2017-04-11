@@ -6,7 +6,7 @@ import * as rimraf from 'rimraf';
 import * as express from 'express';
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import { Cursor } from 'rethinkdb';
+import { Cursor, Connection as RethinkConnection } from 'rethinkdb';
 import * as r from 'rethinkdb';
 
 import { IConnection } from 'mysql';
@@ -59,12 +59,14 @@ router.post('/uploads', upload.any(), (req, res, next) => {
   });
 
   connection.getRethinkConnection()
-    .then((conn: any) => {
+    .then((conn: RethinkConnection) => {
       documentModel.saveDocs(conn, docs)
         .then(() => {
-          res.send({ ok: true })
+          conn.close();
+          res.send({ ok: true });
         })
         .catch(err => {
+          conn.close();
           console.log(err);
           res.send({
             ok: false, error: {
@@ -72,7 +74,7 @@ router.post('/uploads', upload.any(), (req, res, next) => {
               message: 'Server error!'
             }
           })
-        });
+        })
     });
 
 });
@@ -104,17 +106,19 @@ router.get('/search/:hn', (req, res, next) => {
               }
               vstdate.push(vdate);
             });
-
+            conn.destroy();
             res.send({ ok: true, rows: vstdate });
           })
           .catch(error => {
+            conn.destroy();
             console.log(error);
             res.send({
               ok: false,
               code: 500,
               message: "Server error!"
             })
-          });
+          })
+
       })
   } else {
     res.send({
@@ -147,9 +151,11 @@ router.get('/visit-list/:hn/:yymm', (req, res, next) => {
               }
               visits.push(visit);
             });
+            conn.destroy();
             res.send({ ok: true, rows: visits })
           })
           .catch(error => {
+            conn.destroy();
             console.log(error);
             res.send({
               ok: false,
@@ -188,17 +194,18 @@ router.get('/emr-detail/:vn', (req, res, next) => {
               doctor: results.doctor_name,
               diag: results.diag
             }
-
+            conn.destroy();
             res.send({ ok: true, rows: visit });
           })
           .catch(error => {
+            conn.destroy();
             console.log(error);
             res.send({
               ok: false,
               code: 500,
               message: "Server error!"
             })
-          });
+          })
       });
   } else {
     res.send({ ok: false, error: 'ไม่พบรหัส VN' })
@@ -210,7 +217,7 @@ router.get('/view-image/:imageId', (req, res, next) => {
 
   if (imageId) {
     connection.getRethinkConnection()
-      .then((conn: any) => {
+      .then((conn: RethinkConnection) => {
         documentModel.getImageData(conn, imageId)
           .then((results: any) => {
             let data = results.data;
@@ -218,12 +225,12 @@ router.get('/view-image/:imageId', (req, res, next) => {
               'Content-Type': results.mimetype,
               'Content-Length': data.length
             });
+
+            conn.close();
             res.end(data);
-            // save to file
-            // rimraf.sync('xxx.png');
-            // fs.writeFileSync('xxx.png', data);
           })
           .catch(err => {
+            conn.close();
             console.log(err);
             res.send({
               ok: false, error: {
@@ -243,15 +250,18 @@ router.get('/image-list/:vn', (req, res, next) => {
 
   if (vn) {
     connection.getRethinkConnection()
-      .then((conn: any) => {
+      .then((conn: RethinkConnection) => {
         documentModel.getImageList(conn, vn)
           .then((cursor: Cursor) => {
             cursor.toArray((err, rows) => {
               if (err) res.send({ ok: false, error: err });
               else res.send({ ok: true, rows: rows });
-            })
+            });
+
+            conn.close();
           })
           .catch(err => {
+            conn.close();
             console.log(err);
             res.send({
               ok: false, error: {
@@ -271,12 +281,14 @@ router.delete('/image-remove/:id', (req, res, next) => {
 
   if (id) {
     connection.getRethinkConnection()
-      .then((conn: any) => {
+      .then((conn: RethinkConnection) => {
         documentModel.removeImage(conn, id)
           .then(() => {
+            conn.close();
             res.send({ ok: true });
           })
           .catch(err => {
+            conn.close();
             console.log(err);
             res.send({
               ok: false, error: {
