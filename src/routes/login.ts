@@ -26,6 +26,7 @@ router.post('/', (req, res, next) => {
         loginModel.doLogin(conn, username, encPassword)
           .then((cursor: Cursor) => {
             cursor.toArray((err, rows) => {
+              conn.close();
               if (err) {
                 res.send({ ok: false, error: err });
               } else {
@@ -39,7 +40,6 @@ router.post('/', (req, res, next) => {
                 }
               }
             });
-            conn.close();
             // res.send({ok: true, rows: results})
           })
           .catch(err => {
