@@ -254,11 +254,10 @@ router.get('/image-list/:vn', (req, res, next) => {
         documentModel.getImageList(conn, vn)
           .then((cursor: Cursor) => {
             cursor.toArray((err, rows) => {
+              conn.close();
               if (err) res.send({ ok: false, error: err });
               else res.send({ ok: true, rows: rows });
             });
-
-            conn.close();
           })
           .catch(err => {
             conn.close();
