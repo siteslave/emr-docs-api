@@ -1,9 +1,8 @@
-import { IConnection } from 'mysql';
+import Knex = require('knex');
 
 export class PatientModel {
-  getInfo(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getInfo(knex: Knex, hn: string) {
+    let sql = `
       select p.hn, concat(p.pname, p.fname, " ", p.lname) as ptname, timestampdiff(year, p.birthday, current_date()) as age,
       p.birthday, p.addrpart, p.moopart, p.tmbpart, p.amppart,p.chwpart, p.bloodgrp,
       p.firstday, p.nationality, p.pttype, p.sex, p.cid, p.last_update, p.last_visit, p.death,
@@ -16,38 +15,22 @@ export class PatientModel {
       left join house_regist_type as ht on ht.house_regist_type_id=p.type_area
       where p.hn=?
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [hn])
   }
 
-  getClinicMember(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getClinicMember(knex: Knex, hn: string) {
+    let sql = `
         select cm.hn, cm.regdate,cm.lastvisit,cm.next_app_date,
         cm.begin_year, cm.lastupdate, c.name as clinic_name
         from clinicmember as cm
         left join clinic as c on c.clinic=cm.clinic
         where cm.hn=?
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [hn]);
   }
 
-  getAllergy(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getAllergy(knex: Knex, hn: string) {
+    let sql = `
       select oa.hn, oa.report_date, oa.agent,
       oa.symptom, oa.begin_date, oa.update_datetime,
       ar.relation_name
@@ -55,18 +38,11 @@ export class PatientModel {
       left join allergy_relation ar on ar.allergy_relation_id=oa.allergy_relation_id
       where oa.hn=?
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-      });
-    });
+    return knex.raw(sql, [hn])
   }
 
-  getLastLab(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getLastLab(knex: Knex, hn: string) {
+    let sql = `
         select lo.lab_order_number, lo.lab_order_result,
         lab_items_normal_value_ref,
         li.lab_items_name, lh.order_date, DATE_FORMAT(lh.order_date, '%Y-%m-%d') as ymd
@@ -78,19 +54,11 @@ export class PatientModel {
         and timestampdiff(year, lh.order_date, current_date()) < 2
         order by lo.lab_order_number desc
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [hn]);
   }
 
-  getLabItemsResult(connection: IConnection, orderNumbers: any) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getLabItemsResult(knex: Knex, orderNumbers: any) {
+    let sql = `
         select lo.lab_order_number, lo.lab_order_result, lo.lab_items_normal_value_ref, lt.lab_items_name
         from lab_order as lo
         left join lab_items as lt on lt.lab_items_code=lo.lab_items_code
@@ -98,36 +66,20 @@ export class PatientModel {
         and lo.confirm='Y'
         order by lt.lab_items_name
       `;
-      // run query
-      connection.query(sql, [orderNumbers], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [orderNumbers]);
   }
 
-  getOrderNumbers(connection: IConnection, vn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getOrderNumbers(knex: Knex, vn: string) {
+    let sql = `
         select group_concat(lh.lab_order_number) as lab_orders
         from lab_head as lh
         where lh.vn=?
       `;
-      // run query
-      connection.query(sql, [vn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [vn]);
   }
 
-  getScreenBp(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getScreenBp(knex: Knex, hn: string) {
+    let sql = `
         select vstdate, bpd, bps
         from opdscreen
         where hn='0000919'
@@ -136,19 +88,11 @@ export class PatientModel {
         order by vstdate desc
         limit 10
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [hn]);
   }
 
-  getScreenFbs(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getScreenFbs(knex: Knex, hn: string) {
+    let sql = `
         select vstdate, fbs
         from opdscreen
         where hn=?
@@ -157,13 +101,6 @@ export class PatientModel {
         order by vstdate desc
         limit 10
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [hn]);
   }
 }

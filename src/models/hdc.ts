@@ -1,33 +1,23 @@
-import { IConnection } from 'mysql';
-
+import Knex = require('knex');
 import * as r from 'rethinkdb';
 import * as moment from 'moment';
 
 const HOSPCODE = '11053';
 
 export class HDCModel {
-  getCid(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getCid(knex: Knex, hn: string) {
+    let sql = `
       select p.cid
       from person as p
       where p.hospcode=?
       and p.hn=?
       limit 1
       `;
-      // run query
-      connection.query(sql, [HOSPCODE, hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [HOSPCODE, hn])
   }
 
-  getVistDate(connection: IConnection, cid: string = '00000') {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getVistDate(knex: Knex, cid: string = '00000') {
+    let sql = `
       select ch.hospname, ch.hospcode,
       s.pid, s.seq, s.date_serv, s.time_serv, date_format(s.date_serv, '%Y-%m') as ym
       from service as s
@@ -40,19 +30,11 @@ export class HDCModel {
       group by s.hospcode, s.pid, s.date_serv
       order by s.date_serv desc
       `;
-      // run query
-      connection.query(sql, [cid], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        // connection.release();
-      });
-    });
+    return knex.raw(sql, [cid]);
   }
 
-  getServiceDetail(connection: IConnection, hospcode: string, pid: string, seq: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getServiceDetail(knex: Knex, hospcode: string, pid: string, seq: string) {
+    let sql = `
         select h.hospname, h.hospcode, s.date_serv, s.time_serv,cins.instypename,
         s.sbp, s.dbp, s.chiefcomp, p.name, p.lname, if(p.sex='1', 'ชาย', 'หญิง') as sex,
         p.birth, timestampdiff(year, p.birth, s.date_serv) as age
@@ -63,17 +45,12 @@ export class HDCModel {
         where s.hospcode=? and s.pid=? and s.seq=?
         limit 1
       `;
-      // run query
-      connection.query(sql, [hospcode, pid, seq], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
+
+    return knex.raw(sql, [hospcode, pid, seq]);
   }
 
-  getServiceDiag(connection: IConnection, hospcode: string, pid: string, seq: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getServiceDiag(knex: Knex, hospcode: string, pid: string, seq: string) {
+    let sql = `
         select d.diagcode, icd.diagtname, icd.diagename, dt.diagtypedesc as diagtype
         from diagnosis_opd as d
         left join cicd10tm as icd on icd.diagcode=d.diagcode
@@ -81,58 +58,27 @@ export class HDCModel {
         where d.hospcode=? and d.pid=? and d.seq=?
         order by d.diagtype
       `;
-      // run query
-      connection.query(sql, [hospcode, pid, seq], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
+    return knex.raw(sql, [hospcode, pid, seq])
   }
 
-  getServiceProced(connection: IConnection, hospcode: string, pid: string, seq: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getServiceProced(knex: Knex, hospcode: string, pid: string, seq: string) {
+    let sql = `
         select p.procedcode, cp.th_desc, cp.en_desc, p.serviceprice
         from procedure_opd as p
         left join cproced as cp on cp.procedcode=p.procedcode
         where p.hospcode=? and p.pid=? and p.seq=?
       `;
-      // run query
-      connection.query(sql, [hospcode, pid, seq], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
+    return knex.raw(sql, [hospcode, pid, seq])
+
   }
 
-  getServiceDrug(connection: IConnection, hospcode: string, pid: string, seq: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getServiceDrug(knex: Knex, hospcode: string, pid: string, seq: string) {
+    let sql = `
         select d.dname, d.amount, d.drugprice, cu.unit
         from drug_opd as d
         left join cunit as cu on cu.id_unit=d.unit
         where d.hospcode=? and d.pid=? and d.seq=?
       `;
-      // run query
-      connection.query(sql, [hospcode, pid, seq], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
-  }
-
-  getVisitDetail(connection: IConnection, vn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
-
-      `;
-      // run query
-      connection.query(sql, [vn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]);
-        // release connection
-        connection.release();
-      });
-    });
+    return knex.raw(sql, [hospcode, pid, seq])
   }
 }

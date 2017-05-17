@@ -1,14 +1,11 @@
-export interface IFile {
-  id?: string;
-  file_type?: string;
-  filename?: string;
-  mimtype?: string;
-  data?: string;
-  created_at?: string;
-}
 export interface IDocument {
   id?: string;
   vn?: string;
   hn?: string;
-  files?: Array<IFile>;
+  file_name?: string;
+  file_path?: string;
+  mimetype?: string;
+  ext?: string;
+  uploaded_at?: string;
+  image_type?: string;
 }

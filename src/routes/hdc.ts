@@ -6,13 +6,9 @@ import * as rimraf from 'rimraf';
 import * as express from 'express';
 import * as _ from 'lodash';
 import * as moment from 'moment';
-
-import { IConnection } from 'mysql';
-import { Connection } from '../models/connection';
 import { HDCModel } from '../models/hdc';
 
 const router = express.Router();
-const connection = new Connection();
 const hdcModel = new HDCModel();
 
 router.get('/search/:hn', (req, res, next) => {
@@ -24,41 +20,40 @@ router.get('/search/:hn', (req, res, next) => {
     if (hn.length === 4) hn = `000${hn}`;
     if (hn.length === 5) hn = `00${hn}`;
     if (hn.length === 6) hn = `0${hn}`;
+    let db = req.dbHDC;
 
-    connection.getHDCConnection()
-      .then((conn: IConnection) => {
-        hdcModel.getCid(conn, hn)
-          .then((rows: any) => {
-            let cid = rows[0].cid || null;
-            return hdcModel.getVistDate(conn, cid);
-          })
-          .then((results: any) => {
-            // console.log(results);
-            let uniqDate = _.uniqBy(results, "ym");
-            let vstdate: any = [];
-            let visits = [];
+    hdcModel.getCid(db, hn)
+      .then((rows: any) => {
+        let cid = rows[0].cid || null;
+        return hdcModel.getVistDate(db, cid);
+      })
+      .then((results: any) => {
+        // console.log(results);
+        let uniqDate = _.uniqBy(results, "ym");
+        let vstdate: any = [];
+        let visits = [];
 
-            uniqDate.forEach((v: any) => {
-              let xx = _.filter(results, { ym: v.ym });
-              let vdate: Object = {
-                id: v.ym,
-                name: `${moment(v.ym, 'YYYY-MM').locale('th').format('MMMM')} ${moment(v.ym, 'YYYY-MM').get('year') + 543}`,
-                visits: xx
-              }
-              vstdate.push(vdate);
-            });
-            conn.destroy();            
-            res.send({ ok: true, rows: vstdate });
-          })
-          .catch(error => {
-            conn.destroy();
-            console.log(error);
-            res.send({
-              ok: false,
-              code: 500,
-              message: "Server error!"
-            })
-          });
+        uniqDate.forEach((v: any) => {
+          let xx = _.filter(results, { ym: v.ym });
+          let vdate: Object = {
+            id: v.ym,
+            name: `${moment(v.ym, 'YYYY-MM').locale('th').format('MMMM')} ${moment(v.ym, 'YYYY-MM').get('year') + 543}`,
+            visits: xx
+          }
+          vstdate.push(vdate);
+        });
+        res.send({ ok: true, rows: vstdate });
+      })
+      .catch(error => {
+        console.log(error);
+        res.send({
+          ok: false,
+          code: 500,
+          message: error.message
+        })
+      })
+      .finally(() => {
+        db.destroy();
       })
   } else {
     res.send({
@@ -75,62 +70,54 @@ router.get('/visit-detail/:hospcode/:pid/:seq', (req, res, next) => {
   let hospcode = req.params.hospcode;
   let pid = req.params.pid;
   let seq = req.params.seq;
+  let db = req.dbHDC;
 
   if (hospcode && pid && seq) {
-    connection.getHDCConnection()
-      .then((conn: IConnection) => {
-        let service = null;
-        let diag = null;
-        let proced = null;
-        let drug = null;
+    let service = null;
+    let diag = null;
+    let proced = null;
+    let drug = null;
 
-        hdcModel.getServiceDetail(conn, hospcode, pid, seq)
-          .then((results: any) => {
-            if (results.length) {
-              service = {
-                time_serv: moment(results[0].time_serv, 'HHmmss').format('HH:mm'),
-                date_serv: `${moment(results[0].date_serv).get('date')} ${moment(results[0].date_serv).locale('th').format('MMMM')} ${moment(results[0].date_serv).get('year') + 543}`,
-                instype: results[0].instypename,
-                hospcode: results[0].hospcode,
-                hospname: results[0].hospname,
-                sbp: results[0].sbp,
-                dbp: results[0].dbp,
-                chiefcomp: results[0].chiefcomp,
-                ptname: results[0].name + ' ' + results[0].lname,
-                sex: results[0].sex,
-                age: results[0].age,
-                birth: `${moment(results[0].birth).get('date')} ${moment(results[0].birth).locale('th').format('MMMM')} ${moment(results[0].birth).get('year') + 543}`
-              }
-            }
-            return hdcModel.getServiceDiag(conn, hospcode, pid, seq);
-          })
-          .then((results: any) => {
-            diag = results;
-            return hdcModel.getServiceProced(conn, hospcode, pid, seq);
-          })
-          .then((results: any) => {
-            proced = results;
-            return hdcModel.getServiceDrug(conn, hospcode, pid, seq);
-          })
-          .then((results: any) => {
-            conn.destroy();
-            drug = results;
-            res.send({ ok: true, service: service, diag: diag, proced: proced, drug: drug });
-          })
-          .catch((error) => {
-            conn.destroy();
-            console.log(error);
-            res.send({ ok: false, error: error });
-        })
+    hdcModel.getServiceDetail(db, hospcode, pid, seq)
+      .then((rows: any) => {
+        if (rows[0].length) {
+          let results = rows[0];
+          service = {
+            time_serv: moment(results[0].time_serv, 'HHmmss').format('HH:mm'),
+            date_serv: `${moment(results[0].date_serv).get('date')} ${moment(results[0].date_serv).locale('th').format('MMMM')} ${moment(results[0].date_serv).get('year') + 543}`,
+            instype: results[0].instypename,
+            hospcode: results[0].hospcode,
+            hospname: results[0].hospname,
+            sbp: results[0].sbp,
+            dbp: results[0].dbp,
+            chiefcomp: results[0].chiefcomp,
+            ptname: results[0].name + ' ' + results[0].lname,
+            sex: results[0].sex,
+            age: results[0].age,
+            birth: `${moment(results[0].birth).get('date')} ${moment(results[0].birth).locale('th').format('MMMM')} ${moment(results[0].birth).get('year') + 543}`
+          }
+        }
+        return hdcModel.getServiceDiag(db, hospcode, pid, seq);
       })
-      .catch(error => {
+      .then((results: any) => {
+        diag = results[0];
+        return hdcModel.getServiceProced(db, hospcode, pid, seq);
+      })
+      .then((results: any) => {
+        proced = results[0];
+        return hdcModel.getServiceDrug(db, hospcode, pid, seq);
+      })
+      .then((results: any) => {
+        drug = results[0];
+        res.send({ ok: true, service: service, diag: diag, proced: proced, drug: drug });
+      })
+      .catch((error) => {
         console.log(error);
-        res.send({
-          ok: false,
-          code: 500,
-          message: "Server error!"
-        })
-      });
+        res.send({ ok: false, error: error.message });
+      })
+      .finally(() => {
+        db.destroy();
+      })
   } else {
     res.send({ ok: false, error: 'ไม่พบข้อมูล' })
   }

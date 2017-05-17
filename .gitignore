@@ -3,3 +3,5 @@
 .vscode
 app
 node_modules
+documents
+uploads

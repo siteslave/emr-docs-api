@@ -1,12 +1,11 @@
-import { IConnection } from 'mysql';
+import Knex = require('knex');
 
 import * as r from 'rethinkdb';
 import * as moment from 'moment';
 
 export class EmrModel {
-  search(connection: IConnection, hn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  search(knex: Knex, hn: string) {
+    let sql = `
       select o.hn, o.vn, o.vstdate, o.vsttime, k.department,
       DATE_FORMAT(o.vstdate, '%Y-%m') as ym
       from ovst as o
@@ -15,19 +14,11 @@ export class EmrModel {
       and TIMESTAMPDIFF(year, o.vstdate, current_date())<=5
       order by o.vn desc
       `;
-      // run query
-      connection.query(sql, [hn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        connection.release();
-      });
-    });
+    return knex.raw(sql, [hn]);
   }
 
-  getVistDate(connection: IConnection, hn: string, yymm: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getVistDate(knex: Knex, hn: string, yymm: string) {
+    let sql = `
       select o.hn, o.vn, o.vstdate, o.vsttime, k.department
       from ovst as o
       left join kskdepartment as k on k.depcode=o.main_dep
@@ -36,19 +27,12 @@ export class EmrModel {
       and TIMESTAMPDIFF(year, o.vstdate, current_date())<=5
       order by o.vn desc
       `;
-      // run query
-      connection.query(sql, [hn, yymm], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-        // release connection
-        connection.release();
-      });
-    });
+
+    return knex.raw(sql, [hn, yymm]);
   }
 
-  getVisitDetail(connection: IConnection, vn: string) {
-    return new Promise((resolve, reject) => {
-      let sql = `
+  getVisitDetail(knex: Knex, vn: string) {
+    let sql = `
       select o.hn, o.vn, o.vstdate, o.vsttime, o.doctor, o.pttype, o.spclty,
       concat(o.pttype, " - ", p.name) as pttype_name, s.name as spclty_name, k.department,
       d.name as doctor_name, concat(od.icd10, " - ", icd.name) as diag,
@@ -64,13 +48,6 @@ export class EmrModel {
       where o.vn=? limit 1
 
       `;
-      // run query
-      connection.query(sql, [vn], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]);
-        // release connection
-        connection.release();
-      });
-    });
+    return knex.raw(sql, [vn]);
   }
 }
