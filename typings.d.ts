@@ -84,7 +84,8 @@ declare global {
             files: Multer.File[];
             dbHOS: Knex;
             dbHDC: Knex;
-            dbDocs: Knex
+            dbDocs: Knex;
+            decoded: any;
         }
 
         namespace Multer {

@@ -8,4 +8,5 @@ export interface IDocument {
   ext?: string;
   uploaded_at?: string;
   image_type?: string;
+  username?: string
 }

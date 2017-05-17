@@ -67,7 +67,8 @@ router.post('/uploads', upload.single('file'), (req, res, next) => {
         image_type: imageType,
         file_name: file.originalname,
         uploaded_at: uploaded_at,
-        file_path: sImagePath
+        file_path: sImagePath,
+        username: req.decoded.username
       };
 
       documentModel.saveDocs(dbDocs, doc)
