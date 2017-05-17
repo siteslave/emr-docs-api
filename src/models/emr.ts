@@ -1,6 +1,4 @@
 import Knex = require('knex');
-
-import * as r from 'rethinkdb';
 import * as moment from 'moment';
 
 export class EmrModel {
