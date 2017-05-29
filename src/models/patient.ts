@@ -82,7 +82,7 @@ export class PatientModel {
     let sql = `
         select vstdate, bpd, bps
         from opdscreen
-        where hn='0000919'
+        where hn=?
         and timestampdiff(year, vstdate, current_date()) <= 1 
         and bpd>0 and bps>0
         order by vstdate desc

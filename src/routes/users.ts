@@ -5,6 +5,7 @@ import * as fse from 'fs-extra';
 
 import * as rimraf from 'rimraf';
 import * as mv from 'mv';
+const uuidV4 = require('uuid/v4');
 
 import * as express from 'express';
 import * as _ from 'lodash';
@@ -28,64 +29,67 @@ var storage = multer.diskStorage({
     cb(null, process.env.UPLOAD_PATH)
   },
   filename: function (req, file, cb) {
-    let _path = path.extname(file.originalname);
-    cb(null, Date.now() + _path)
+    let _ext = path.extname(file.originalname);
+    let document_id = uuidV4();
+    cb(null, document_id + _ext)
   }
 })
 
 var upload = multer({ storage: storage })
 
-router.post('/uploads', upload.single('file'), (req, res, next) => {
-  let file = req.file;
+router.post('/uploads', upload.any(), (req, res, next) => {
+  let files = req.files;
   let docs = [];
   let hn = req.body.hn;
   let vn = req.body.vn;
   let imageType = req.body.imageType;
   let dbDocs = req.dbDocs;
 
-  console.log(file);
   let sPath = path.join(hn, vn);
   let dPath = path.join(process.env.DOCUMENTS_PATH, sPath); // path for save to storage
+
   fse.ensureDirSync(dPath);
 
-  let fileNameWithOutExt = file.filename.replace(/\.[^/.]+$/, ""); // file without extension
-
-  let sImagePath = path.join(sPath, fileNameWithOutExt); // path for save to database
-  let destFile = path.join(dPath, fileNameWithOutExt);
-  let sourceFile = file.path;
-
-  mv(sourceFile, destFile, (err) => {
-    if (err) {
-      res.send({ ok: false, message: err.message });
-    } else {
-      let uploaded_at = moment().format('x');
-      let doc: IDocument = {
-        vn: vn,
-        hn: hn,
-        ext: path.extname(file.path),
-        mimetype: file.mimetype,
-        image_type: imageType,
-        file_name: file.originalname,
-        uploaded_at: uploaded_at,
-        file_path: sImagePath,
-        username: req.decoded.username
-      };
-
-      documentModel.saveDocs(dbDocs, doc)
-        .then(() => {
-          res.send({ ok: true });
-        })
-        .catch(err => {
-          console.log(err);
-          res.send({ ok: false, error: err.message });
-        })
-        .finally(() => {
-          dbDocs.destroy();
-        })
-    }
+  files.forEach(file => {
+    let fileNameWithOutExt = file.filename.replace(/\.[^/.]+$/, ""); // file without extension
+    let sImagePath = path.join(sPath, fileNameWithOutExt); // path for save to database
+    let uploaded_at = moment().format('x');
+    let doc: IDocument = {
+      vn: vn,
+      hn: hn,
+      ext: path.extname(file.path),
+      mimetype: file.mimetype,
+      image_type: imageType,
+      file_name: file.originalname,
+      uploaded_at: uploaded_at,
+      file_path: sImagePath,
+      username: 'xxx'
+    };
+    docs.push(doc);
   });
 
+  files.forEach(file => {
+    let fileNameWithOutExt = file.filename.replace(/\.[^/.]+$/, ""); // file without extension
+    let destFile = path.join(dPath, fileNameWithOutExt);
+    let sourceFile = file.path;
+
+    mv(sourceFile, destFile, (err) => { if (err) console.log(err) });
+
+  })
+
+  documentModel.saveDocs(dbDocs, docs)
+    .then(() => {
+      res.send({ ok: true });
+    })
+    .catch(err => {
+      console.log(err);
+      res.send({ ok: false, error: err.message });
+    })
+    .finally(() => {
+      dbDocs.destroy();
+    });
 });
+
 
 router.get('/search/:hn', (req, res, next) => {
   let hn = req.params.hn;
@@ -114,6 +118,7 @@ router.get('/search/:hn', (req, res, next) => {
           }
           vstdate.push(vdate);
         });
+        db.destroy();
         res.send({ ok: true, rows: vstdate });
       })
       .catch(error => {
@@ -126,7 +131,7 @@ router.get('/search/:hn', (req, res, next) => {
       })
       .finally(() => {
         db.destroy();
-      })
+      });
   } else {
     res.send({
       ok: false,
@@ -212,7 +217,7 @@ router.get('/emr-detail/:vn', (req, res, next) => {
       })
       .finally(() => {
         db.destroy();
-      })
+      });
   } else {
     res.send({ ok: false, error: 'ไม่พบรหัส VN' })
   }
@@ -245,7 +250,7 @@ router.get('/view-image/:imageId', (req, res, next) => {
       })
       .finally(() => {
         db.destroy();
-      })
+      });
   } else {
     res.send({ ok: false, error: 'ไม่พบรหัสรูปภาพ' })
   }
@@ -271,7 +276,7 @@ router.get('/image-list/:vn', (req, res, next) => {
       })
       .finally(() => {
         db.destroy();
-      })
+      });
   } else {
     res.send({ ok: false, error: 'ไม่พบรหัสรูปภาพ' })
   }
@@ -296,7 +301,7 @@ router.delete('/image-remove/:id', (req, res, next) => {
       })
       .finally(() => {
         db.destroy();
-      })
+      });
   } else {
     res.send({ ok: false, error: 'ไม่พบรหัสรูปภาพ' })
   }

@@ -3,12 +3,9 @@
 import * as express from 'express';
 const router = express.Router();
 
-// router
-//   .get('/categories', (req, res, next) => {
-//     res.render('index', { title: 'Express' });
-//   })
-//   .post('/categories', (req, res, next) => {
-
-//   })
+router
+  .get('/', (req, res, next) => {
+    res.send({ ok: true, message: 'Welcome to kDocument server', version: '1.0.0' });
+  })
 
 export default router;

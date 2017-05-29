@@ -31,12 +31,13 @@ router.get('/search/:hn', (req, res, next) => {
     if (hn.length === 6) hn = `0${hn}`;
     emrModel.search(db, hn)
       .then((results: any) => {
-        let uniqDate = _.uniqBy(results, "ym");
+        console.log(results[0]);
+        let uniqDate = _.uniqBy(results[0], "ym");
         let vstdate: any = [];
         let visits = [];
 
         uniqDate.forEach((v: any) => {
-          let xx = _.filter(results, { ym: v.ym });
+          let xx = _.filter(results[0], { ym: v.ym });
           let vdate: Object = {
             id: v.ym,
             name: `${moment(v.ym, 'YYYY-MM').locale('th').format('MMMM')} ${moment(v.ym, 'YYYY-MM').get('year') + 543}`,
@@ -149,15 +150,13 @@ router.get('/view-image/:imageId', (req, res, next) => {
   if (imageId) {
     documentModel.getImageData(dbDocs, imageId)
       .then((results: any) => {
-        let data = fs.readFileSync(results[0].file_path);
+        let filePath = path.join(process.env.DOCUMENTS_PATH, results[0].file_path);
+        let data = fs.readFileSync(filePath);
         res.writeHead(200, {
-          'Content-Type': results.mimetype,
+          'Content-Type': results[0].mimetype,
           'Content-Length': data.length
         });
         res.end(data);
-        // save to file
-        // rimraf.sync('xxx.png');
-        // fs.writeFileSync('xxx.png', data);
       })
       .catch(err => {
         console.log(err);

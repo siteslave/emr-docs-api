@@ -2,6 +2,7 @@
 
 require('dotenv').config();
 import * as cors from 'cors';
+const protect = require('@risingstack/protect');
 
 import * as express from 'express';
 import * as path from 'path';
@@ -29,11 +30,21 @@ app.set('view engine', 'pug');
 //app.use(favicon(path.join(__dirname,'public','favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cors());
+
+app.use(protect.express.sqlInjection({
+  body: true,
+  loggerFunction: console.error
+}));
+
+app.use(protect.express.xss({
+  body: true,
+  loggerFunction: console.error
+}));
 
 let authUploader = (req, res, next) => {
   let token = null;
@@ -41,6 +52,8 @@ let authUploader = (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.query && req.query.token) {
     token = req.query.token;
+  } else if (req.body && req.body.token) {
+    token = req.body.token;
   }
 
   let jwt = new Jwt();
@@ -67,12 +80,14 @@ let authDoctor = (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.query && req.query.token) {
     token = req.query.token;
+  } else if (req.body && req.body.token) {
+    token = req.body.token;
   }
 
   let jwt = new Jwt();
   jwt.verify(token)
     .then((decoded: any) => {
-      if (decoded.user_type === '2') { //uploader
+      if (decoded.usertype === '2') { //uploader
         req.decoded = decoded;
         next();
       } else {
@@ -163,7 +178,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/emr-docs/login', loginRouter);
-// app.use('/emr-docs', index);
+app.use('/emr-docs', index);
 app.use('/emr-docs/users', authUploader, userRouter);
 app.use('/emr-docs/doctors', authDoctor, doctorRouter);
 app.use('/emr-docs/hdc', authDoctor, hdcRouter);
